@@ -73,6 +73,41 @@ Results.t = tHistory;
 Results.J = evalObjectiveFCN(Results.u,Results.x,Results.xref,diag(Q),R,Ru);
 
 %% Show results
-figure,plot(xHistory'), hold on, plot(r,'-k'), legend('aoa','pa','pr','r')
-figure,plot(uHistory)
-figure,plot(Results.J)
+darkBackground = [0.08 0.10 0.14];
+lightText = [0.92 0.95 0.98];
+stateColors = [0.20 0.80 1.00; 1.00 0.58 0.20; 0.45 1.00 0.58];
+
+figure('Color',darkBackground); hold on; box on
+set(gca,'Color',darkBackground,'XColor',lightText,'YColor',lightText, ...
+    'GridColor',[0.35 0.40 0.48],'LineWidth',1,'FontSize',12)
+statePlots = plot(tHistory,xHistory','LineWidth',1.5);
+for i = 1:Nvar
+    statePlots(i).Color = stateColors(i,:);
+end
+referencePlot = plot(tHistory,rHistory,'--','Color',[1.00 0.78 0.45],'LineWidth',1.8);
+xlabel('Time','Color',lightText)
+ylabel('State','Color',lightText)
+title('F8 MPC State Tracking','Color',lightText)
+legend([statePlots; referencePlot],{'Angle of attack','Pitch angle', ...
+    'Pitch rate','Reference'},'TextColor',lightText, ...
+    'Color',darkBackground,'Location','best')
+
+figure('Color',darkBackground); box on
+set(gca,'Color',darkBackground,'XColor',lightText,'YColor',lightText, ...
+    'GridColor',[0.35 0.40 0.48],'LineWidth',1,'FontSize',12)
+controlPlot = plot(tHistory,uHistory,'Color',[1.00 0.58 0.20],'LineWidth',1.5);
+xlabel('Time','Color',lightText)
+ylabel('Control input','Color',lightText)
+title('F8 MPC Control Input','Color',lightText)
+legend(controlPlot,{'Elevator control input'},'TextColor',lightText, ...
+    'Color',darkBackground,'Location','best')
+
+figure('Color',darkBackground); box on
+set(gca,'Color',darkBackground,'XColor',lightText,'YColor',lightText, ...
+    'GridColor',[0.35 0.40 0.48],'LineWidth',1,'FontSize',12)
+costPlot = plot(tHistory,Results.J,'Color',[0.70 1.00 0.78],'LineWidth',1.5);
+xlabel('Time','Color',lightText)
+ylabel('Cost','Color',lightText)
+title('F8 MPC Objective Function','Color',lightText)
+legend(costPlot,{'Cumulative objective'},'TextColor',lightText, ...
+    'Color',darkBackground,'Location','best')

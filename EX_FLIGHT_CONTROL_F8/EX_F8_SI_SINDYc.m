@@ -25,9 +25,10 @@ usesine = 0;
 lambda_vec = [.0001,.01,0.01]; % sine2 // WORKED IN MPC
 eps = 0;
 
-%Add noise
-%eps = 0.05*std(x(:,1));
-%x = x + eps*randn(size(x));       
+% Add noise
+% eps = 0.05*std(x(:,1));
+
+x = x + eps*randn(size(x));       
 
 trainSINDYc
 
@@ -38,7 +39,7 @@ Xi0([4],2) = 1;
 Xi0([2,4,5,6,16,19,25,35],3) = [-4.208,-0.396,-20.967,-0.47,-3.564,6.265,46,61.4];
 Xi-Xi0
 
-%% Prediction  over training phase
+%% Prediction over training phase
 if any(strcmp(InputSignalType,{'sine2', 'chirp','prbs', 'sphs'})==1)
     [tSINDYc,xSINDYc]=ode45(@(t,x)sparseGalerkinControl(t,x,forcing(x,t),Xi(:,1:Nvar),polyorder,usesine),tspan,x0,options);  % approximate
 else
@@ -56,21 +57,29 @@ end
 
 %% Show validation
 clear ph
-figure,box on,
-ccolors = get(gca,'colororder');
-ccolors_valid = [ccolors(1,:)-[0 0.2 0.2];ccolors(2,:)-[0.1 0.2 0.09];ccolors(3,:)-[0.1 0.2 0.09]];
+darkBackground = [0.08 0.10 0.14];
+lightText = [0.92 0.95 0.98];
+trueColors = [0.20 0.80 1.00; 1.00 0.58 0.20; 0.45 1.00 0.58];
+modelColors = [0.60 0.90 1.00; 1.00 0.78 0.45; 0.70 1.00 0.78];
+
+figure('Color',darkBackground); box on; hold on
+set(gca,'Color',darkBackground,'XColor',lightText,'YColor',lightText, ...
+    'GridColor',[0.35 0.40 0.48],'LineWidth',1,'FontSize',14)
 for i = 1:Nvar
-    ph(i) = plot(tspan,x(:,i),'-','Color',ccolors(i,:),'LineWidth',1); hold on
+    ph(i) = plot(tspan,x(:,i),'-','Color',trueColors(i,:), ...
+        'LineWidth',1.5);
 end
 for i = 1:Nvar
-    ph(Nvar+i) = plot(tspan,xSINDYc(:,i),'--','Color',ccolors_valid(i,:),'LineWidth',2);
+    ph(Nvar+i) = plot(tspan,xSINDYc(:,i),'--','Color',modelColors(i,:), ...
+        'LineWidth',2);
 end
 ylim([-0.8 0.9])
-xlabel('Time')
-ylabel('xi')
-legend(ph([1,4]),'True',ModelName)
-legend(ph([1,2,3]),'angle of attack','pitch angle', 'pitch rate')
-set(gca,'LineWidth',1, 'FontSize',14)
+xlabel('Time','Color',lightText)
+ylabel('State','Color',lightText)
+title('F8 SINDYc Training Validation','Color',lightText)
+legend(ph,{'True angle of attack','True pitch angle','True pitch rate', ...
+    'SINDYc angle of attack','SINDYc pitch angle','SINDYc pitch rate'}, ...
+    'TextColor',lightText,'Color',darkBackground,'Location','best')
 set(gcf,'Position',[100 100 300 200])
 set(gcf,'PaperPositionMode','auto')
 

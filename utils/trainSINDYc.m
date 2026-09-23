@@ -1,6 +1,7 @@
-
 if eps == 0
     DERIV_NOISE = 0;
+else
+    DERIV_NOISE = 1;
 end
 
 
@@ -9,7 +10,7 @@ if size(x,1)==size(u,2)
 end
 
 % Compute Derivative
-if any(strcmp(InputSignalType,{'sine2', 'sine3', 'chirp','prbs', 'sphs','mixed', 'noise','unforced'})==1) && DERIV_NOISE == 0%eps==0 % eps~=0
+if any(strcmp(InputSignalType,{'sine2', 'sine3', 'chirp','prbs', 'sphs','mixed', 'noise','unforced'})==1) && DERIV_NOISE == 0 %eps==0 % eps~=0
     % compute derivative using fourth order central difference
     % use TVRegDiff if more error
     dx = zeros(length(x)-5,3);
@@ -22,7 +23,7 @@ if any(strcmp(InputSignalType,{'sine2', 'sine3', 'chirp','prbs', 'sphs','mixed',
     xaug = [x(3:end-3,:) u(3:end-3,:)];
     dx(:,size(x,2)+1) = 0*dx(:,size(x,2));
 else %excitation using Gaussian white noise
-    %xclean = x;
+    xclean = x;
     dxclean = zeros(size(xclean));
     % Compute clean derivative  (just for comparison!)
     for i=1:length(x)

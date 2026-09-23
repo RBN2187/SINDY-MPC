@@ -20,8 +20,8 @@ function [c, ceq] = ConstraintFCN(u,uold,x,Ts,N,LBo,UBo,LBdu,UBdu,p)
 
 %% Nonlinear MPC design parameters
 % range of angle of attack
-zMin = LBo;
-zMax = UBo;
+zMin = LBo(1);
+zMax = UBo(1);
 
 %% Inequality constraints calculation
 c = zeros(2*N,1); 
@@ -37,11 +37,15 @@ for ct=1:N
     
     % -z + zMin < 0 % lower bound
     cy(2*ct-1) = -xk1(1)+zMin; 
-    c(2*ct-1) = -duk+LBdu; 
+    if ~isnan(LBdu)
+        c(2*ct-1) = -duk+LBdu;
+    end
     
     % z - zMax < 0 % upper bound
     cy(2*ct) = xk1(1)-zMax;
-    c(2*ct) = duk-UBdu;
+    if ~isnan(UBdu)
+        c(2*ct) = duk-UBdu;
+    end
     
     % Update plant state and input for next step
     xk = xk1;
