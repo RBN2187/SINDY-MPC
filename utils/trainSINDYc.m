@@ -1,18 +1,12 @@
-if eps == 0
-    DERIV_NOISE = 0;
-else
-    DERIV_NOISE = 1;
-end
-
+DERIV_NOISE = 0;
 
 if size(x,1)==size(u,2)
     u = u';
 end
 
-% Compute Derivative
-if any(strcmp(InputSignalType,{'sine2', 'sine3', 'chirp','prbs', 'sphs','mixed', 'noise','unforced'})==1) && DERIV_NOISE == 0 %eps==0 % eps~=0
+%% 1. COMPUTE DERIVATIVE ASSUMING NO NOISE IN THE SIGNAL
+if any(strcmp(InputSignalType,{'sine2', 'sine3', 'chirp','prbs', 'sphs','mixed', 'noise','unforced'}) == 1) && DERIV_NOISE == 0
     % compute derivative using fourth order central difference
-    % use TVRegDiff if more error
     dx = zeros(length(x)-5,3);
     for i=3:length(x)-3
         for k=1:size(x,2)
@@ -22,52 +16,33 @@ if any(strcmp(InputSignalType,{'sine2', 'sine3', 'chirp','prbs', 'sphs','mixed',
     % concatenate
     xaug = [x(3:end-3,:) u(3:end-3,:)];
     dx(:,size(x,2)+1) = 0*dx(:,size(x,2));
-else %excitation using Gaussian white noise
-    xclean = x;
-    dxclean = zeros(size(xclean));
-    % Compute clean derivative  (just for comparison!)
-    for i=1:length(x)
-        dxclean(i,:) = LorenzSys(0,xclean(i,:),u(i),p);
-    end
-    xclean = [xclean u];
-    dxclean(:,4) = 0*dxclean(:,3);
-
-    %  Total Variation Regularized Differentiation
-    clear dx xt
-    for i = 1:size(x,2)
-        dx(:,i) = TVRegDiff( x(:,i), 20, .00002, [], 'small', 1e12, dt, 1, 1 ); %.00002
-    end
-    dx = dx(2:end,:);
-    
-    for i = 1:size(x,2)
-        xt(:,i) = cumsum(dx(:,i))*dt;
-        xt(:,i) = xt(:,i) - (mean(xt(50:end-50,i)) - mean(x(50:end-50,i)));
-    end
-    xt = xt(50:end-51,:);
-    dx = dx(50:end-51,:);  % trim off ends (overly conservative)
-    xaug = [xt u(50:end-51)];
-    dx(:,size(x,2)+1) = 0*dx(:,size(x,2));
-    close all
 end
 
 n = size(dx,2);
 
-% Sparse regression
+%% SPARSE REGRESSION
 clear Theta Xi
+
+% Build the candidate function library Theta
 Theta = poolData(xaug,n,polyorder,usesine);
-Theta_norm = zeros(size(Theta,2),1); %zeros(size(Theta,2),1);ones
+Theta_norm = zeros(size(Theta,2),1);
+
+% Normalize the columns of Theta to avoid biasing the regression towards functions with large magnitudes
 for i = 1:size(Theta,2)
    Theta_norm(i) = norm(Theta(:,i));
    Theta(:,i) = Theta(:,i)./Theta_norm(i);
 end
-m = size(Theta,2);
 
+% Excecute the regression - determine the Xi matrix
 if exist('lambda_vec') == 1
+    % --- Call the sparsifyDynamicsIndependent function to perform sparse regression with STATE-DEPENDENT lambda ---
     Xi = sparsifyDynamicsIndependent(Theta,dx,lambda_vec,n-1);
 else
+    % --- Call the sparsifyDynamics function to perform sparse regression with a single lambda ---
     Xi = sparsifyDynamics(Theta,dx,lambda,n-1);
 end
 
+%% 3. POST-PROCESSING
 
 if n == 3
     str_vars = {'x','y','u'};
@@ -81,4 +56,5 @@ for i = 1:size(Theta,2)
    Xi(i,:) = Xi(i,:)./Theta_norm(i);
 end
 
+% --- Call the poolDataLIST function to get the list (of strings) of active functions in the identified model ---
 yout = poolDataLIST(str_vars,Xi,n,polyorder,usesine);
